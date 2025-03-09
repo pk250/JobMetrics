@@ -1,6 +1,5 @@
 from sqlalchemy.orm import Session
 from app.models import User, Spider, Schedule, ExecutionLog, Environment, EnvironmentVariable, SpiderEnvironment
-from app.models.boss_cookie import BossCookie
 from typing import List, Optional, Dict, Any, Type, TypeVar, Generic
 
 T = TypeVar('T')
@@ -133,4 +132,3 @@ execution_log_crud = CRUDExecutionLog(ExecutionLog)
 environment_crud = CRUDEnvironment(Environment)
 environment_variable_crud = CRUDEnvironmentVariable(EnvironmentVariable)
 spider_environment_crud = CRUDSpiderEnvironment(SpiderEnvironment)
-boss_cookie_crud = CRUDBase[BossCookie](BossCookie)
