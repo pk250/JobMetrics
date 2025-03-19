@@ -105,8 +105,7 @@ async def delete_schedule(schedule_id: int, background_tasks: BackgroundTasks, d
         raise HTTPException(status_code=404, detail="调度任务不存在")
     
     # 在后台从调度器中移除任务
-    background_tasks.add_task(remove_job_from_scheduler, schedule_id)
-    
+    remove_job_from_scheduler(schedule_id)
     # 删除调度任务
     schedule_crud.remove(db, id=schedule_id)
     return None
@@ -137,7 +136,9 @@ def remove_job_from_scheduler(schedule_id: int):
         scheduler = get_scheduler()
         scheduler.remove_job(schedule_id)
     except Exception as e:
-        print(f"移除调度任务失败: {str(e)}")
+        from app.services.scheduler import logger
+        logger.error(f"移除调度任务失败: {str(e)}")
+        raise
 
 from typing import Dict
 

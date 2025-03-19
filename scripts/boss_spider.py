@@ -30,27 +30,18 @@ class Boss:
     def __init__(self):
         try:
             # 使用undetected_chromedriver自动下载匹配的驱动
-            self.options = ChromeOptions()
-            # self.options.add_argument('--headless')
-            self.options.add_argument('--no-sandbox')
+            self.options = uc.ChromeOptions()
+            self.options.headless = False
+        
+            #self.options.add_argument('--headless')
+            #self.options.add_argument('--no-sandbox')
             # 禁用弹窗阻止
-            self.options.add_argument('--disable-popup-blocking')
-            self.options.add_argument('--disable-blink-features=AutomationControlled')
-            
-            # 尝试使用undetected_chromedriver的自动下载功能
-            try:
-                print("尝试使用undetected_chromedriver自动下载匹配的驱动...")
-                self.driver = uc.Chrome(options=self.options)
-                print("成功初始化Chrome驱动")
-            except Exception as uc_error:
-                print(f"使用undetected_chromedriver初始化失败: {str(uc_error)}")
-                # 尝试使用标准selenium方式初始化
-                print("尝试使用标准selenium方式初始化...")
-                print(f"Chrome驱动路径: {settings.CHROME_DRIVER_PATH}")
-                self.service = Service(settings.CHROME_DRIVER_PATH)
-                self.driver = webdriver.Chrome(service=self.service, options=self.options)
-                print("成功使用标准selenium方式初始化Chrome驱动")
-                
+            #self.options.add_argument('--disable-popup-blocking')
+            # self.options.add_argument('--disable-blink-features=AutomationControlled')
+            # print(f"Chrome驱动路径: {settings.CHROME_DRIVER_PATH}")
+            self.service = Service(settings.CHROME_DRIVER_PATH)
+            self.driver = uc.Chrome(driver_executable_path=settings.CHROME_DRIVER_PATH,browser_executable_path="C:\Program Files\Google\Chrome\Application\chrome.exe",options=self.options)
+            print("成功初始化Chrome驱动")
             self.cookies = None
         except Exception as e:
             print(f"初始化Chrome驱动失败: {str(e)}")

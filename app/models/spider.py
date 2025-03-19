@@ -3,7 +3,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from .base import Base
 
-
 class Spider(Base):
     __tablename__ = 'spiders'
 

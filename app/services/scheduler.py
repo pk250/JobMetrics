@@ -18,13 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class SpiderScheduler:
-    def __init__(self, db_session):
-        self.db = db_session
-        # 使用SQLAlchemy作为作业存储
-        jobstores = {
-            'default': SQLAlchemyJobStore(url='sqlite:///jobs.sqlite')
-        }
-        self.scheduler = BackgroundScheduler(jobstores=jobstores)
+    def __init__(self, db: Session):
+        self.db = db
+        self.scheduler = BackgroundScheduler()
         self.scheduler.start()
         logger.info("调度器已启动")
 
@@ -163,9 +159,15 @@ async def run_spider_async(spider_id):
             update_log(db, log_entry.id, "failed", error_message=error_msg)
             return
 
+        # 获取虚拟环境python路径
+        venv_python = os.path.abspath(os.path.join(os.getcwd(), '.venv', 'Scripts', 'python.exe'))
+        if not os.path.exists(venv_python):
+            logger.warning(f"虚拟环境Python解释器未找到: {venv_python}")
+            venv_python = 'python'
+
         # 执行脚本并捕获输出
         process = subprocess.Popen(
-            ["python", script_path],
+            [venv_python, script_path],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=env,

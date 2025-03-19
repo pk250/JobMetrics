@@ -94,10 +94,8 @@
                 </div>
             </nav>
 
-            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-                <div id="content-area">
-                    <!-- 内容将通过JavaScript动态加载 -->
-                </div>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4" style="padding-top: 20px;">
+                <iframe id="content-frame" style="width: 100%; height: calc(100vh - 72px); border: none; padding: 0 15px;"></iframe>
                 <div id="loading" class="loading">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">加载中...</span>
@@ -328,9 +326,6 @@
                         <div class="mb-3">
                             <label class="form-label d-flex justify-content-between align-items-center">
                                 <span>状态</span>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="testSpider">
-                                    <i class="bi bi-play"></i> 测试运行
-                                </button>
                             </label>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="spiderIsActive">
@@ -481,6 +476,21 @@
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script src="/static/js/script-editor.js"></script>
     <script src="/static/js/admin.js"></script>
-    <script src="/static/js/log-viewer.js"></script>
+    <script>
+    // 导航菜单激活状态切换
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelectorAll('.nav-link').forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+            const page = this.dataset.page;
+            document.getElementById('content-frame').src = `/admin/${page}`;
+        });
+    });
+    </script>
 </body>
 </html>
+<div id="content-area">
+    <!-- 内容将通过JavaScript动态加载 -->
+</div>
+<iframe id="content-iframe" style="width: 100%; height: calc(100vh - 60px); border: none"></iframe>

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query, Body
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Query, Body, BackgroundTasks
 from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
@@ -12,6 +12,8 @@ import os
 import shutil
 import tempfile
 import subprocess
+import sys
+import time
 
 router = APIRouter(prefix="/api/spiders", tags=["spiders"])
 
@@ -98,6 +100,25 @@ class SpiderUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
+class TestResult(BaseModel):
+    task_id: str
+    status: str
+    logs: str
+    execution_time: Optional[float] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+
+class SpiderTestTask(BaseModel):
+    id: int
+    script_path: str
+    status: str
+    logs: Optional[str] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    execution_time: Optional[float] = None
+
 class SpiderResponse(SpiderBase):
     id: int
     user_id: int
@@ -175,7 +196,6 @@ async def update_spider(spider_id: int, spider: SpiderUpdate, db: Session = Depe
             schedule_crud.update(db, db_obj=schedule, obj_in={"is_active": False})
     
     return updated_spider
-
 
 @router.delete("/{spider_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_spider(spider_id: int, db: Session = Depends(get_db)):

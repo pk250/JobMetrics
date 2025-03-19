@@ -12,33 +12,60 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPage('dashboard');
     
     // 注册侧边栏导航事件
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const page = this.getAttribute('data-page');
-            loadPage(page);
-            
-            // 更新活动状态
-            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-            this.classList.add('active');
+    // 导航菜单激活状态切换
+    document.addEventListener('DOMContentLoaded', function() {
+        // 初始化菜单点击事件
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // 切换激活状态
+                document.querySelectorAll('.nav-link').forEach(item => 
+                    item.classList.remove('active'));
+                this.classList.add('active');
+                
+                // 显示加载状态
+                const loading = document.getElementById('loading');
+                loading.style.display = 'flex';
+                
+                // 加载子页面
+                const page = this.dataset.page;
+                const iframe = document.getElementById('content-frame');
+                iframe.onload = () => {
+                    loading.style.display = 'none';
+                    // 通知子页面激活状态
+                    iframe.contentWindow.postMessage({ activePage: page }, '*');
+                };
+                iframe.src = `/admin/${page}`;
+            });
         });
+    
+        // 处理子页面通信
+        window.addEventListener('message', function(e) {
+            if (e.data.updateNav) {
+                document.querySelector(`[data-page="${e.data.updateNav}"]`).click();
+            }
+        });
+    
+        // 默认加载dashboard
+        document.querySelector('[data-page="dashboard"]').click();
     });
 });
 
 // 加载页面内容
 function loadPage(page) {
     currentPage = page;
-    const contentArea = document.getElementById('content-area');
+    const iframe = document.getElementById('content-iframe');
     const loadingIndicator = document.getElementById('loading');
     
-    // 显示加载指示器
-    contentArea.innerHTML = '';
     loadingIndicator.style.display = 'block';
     
     // 获取对应模板
     const template = document.getElementById(`template-${page}`);
     if (template) {
-        contentArea.innerHTML = template.innerHTML;
+        iframe.contentDocument.open();
+        iframe.contentDocument.write(template.innerHTML);
+        iframe.contentDocument.close();
         
         // 根据页面类型加载数据
         switch (page) {
@@ -47,36 +74,31 @@ function loadPage(page) {
                 break;
             case 'spiders':
                 loadSpiders();
-                setupSpiderEvents();
                 setupSearchFunction();
                 break;
             case 'schedules':
                 loadSchedules();
-                setupScheduleEvents();
                 break;
             case 'environments':
                 loadEnvironments();
-                setupEnvironmentEvents();
                 break;
             case 'logs':
                 loadLogs();
                 break;
         }
     } else {
-        contentArea.innerHTML = '<div class="alert alert-danger">页面不存在</div>';
+        iframe.contentDocument.body.innerHTML = '<div class="alert alert-danger">页面不存在</div>';
     }
     
-    // 隐藏加载指示器
     loadingIndicator.style.display = 'none';
 }
 
 // 加载仪表盘数据
-async function loadDashboardData() {
+async function loadDashboardData(doc = document) {
     try {
-        // 获取爬虫总数
         const spidersResponse = await fetch('/api/spiders/');
         const spiders = await spidersResponse.json();
-        document.getElementById('spider-count').textContent = spiders.length;
+        doc.getElementById('spider-count').textContent = spiders.length;
         
         // 获取调度任务总数
         const schedulesResponse = await fetch('/api/schedules/');
@@ -339,41 +361,6 @@ function setupSpiderEvents() {
             scriptEditor.open(scriptPath, '', (path) => {
                 document.getElementById('spiderScriptPath').value = path;
             });
-        });
-    }
-
-    // 测试运行按钮事件
-    const testSpiderBtn = document.getElementById('testSpider');
-    if (testSpiderBtn) {
-        testSpiderBtn.addEventListener('click', async function() {
-            const scriptPath = document.getElementById('spiderScriptPath').value;
-            if (!scriptPath) {
-                showAlert('请先指定脚本路径', 'warning');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/spiders/test', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        script_path: scriptPath
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    showAlert(`测试运行成功: ${data.message}`, 'success');
-                } else {
-                    const error = await response.json();
-                    throw new Error(error.detail || '测试失败');
-                }
-            } catch (error) {
-                console.error('测试运行失败:', error);
-                showAlert(`测试运行失败: ${error.message}`, 'danger');
-            }
         });
     }
     
@@ -1008,8 +995,17 @@ async function viewLogDetail(logId) {
         } catch (e) {
             console.log('日志内容不是有效的JSON格式');
         }
+
+        console.log(log);
         
-        // 创建模态框
+        // 清理已存在的模态框
+        const existingModal = document.getElementById('logDetailModal');
+        if (existingModal) {
+            existingModal.parentNode.removeChild(existingModal);
+            bootstrap.Modal.getInstance(existingModal)?.dispose();
+        }
+
+        // 创建新的模态框容器
         const modalHtml = `
             <div class="modal fade" id="logDetailModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -1035,12 +1031,6 @@ async function viewLogDetail(logId) {
                                 <strong>结束时间:</strong> <span id="log-end-time">${log.end_time ? formatDateTime(log.end_time) : '-'}</span>
                             </div>
                             <div class="mb-3">
-                                <strong>WebSocket状态:</strong> <span id="websocket-status"></span>
-                            </div>
-                            <div id="log-progress" class="mb-3">
-                                <!-- 进度条将在这里显示 -->
-                            </div>
-                            <div class="mb-3">
                                 <strong>输出:</strong>
                                 <pre id="log-content" class="bg-dark text-light p-3 mt-2" style="max-height: 300px; overflow-y: auto;">${formattedLogContent}</pre>
                             </div>
@@ -1056,8 +1046,7 @@ async function viewLogDetail(logId) {
                 </div>
             </div>
         `;
-        
-        // 添加到文档中
+
         const modalContainer = document.createElement('div');
         modalContainer.innerHTML = modalHtml;
         document.body.appendChild(modalContainer);
@@ -1065,20 +1054,6 @@ async function viewLogDetail(logId) {
         // 显示模态框
         const logDetailModal = new bootstrap.Modal(document.getElementById('logDetailModal'));
         logDetailModal.show();
-        
-        // 初始化日志查看器
-        const logViewer = new LogViewer(logId);
-        logViewer.init(
-            document.getElementById('log-content'),
-            document.getElementById('websocket-status'),
-            document.getElementById('log-progress')
-        );
-        
-        // 模态框关闭时移除元素并关闭WebSocket连接
-        document.getElementById('logDetailModal').addEventListener('hidden.bs.modal', function() {
-            logViewer.close();
-            document.body.removeChild(modalContainer);
-        });
     } catch (error) {
         console.error('获取日志详情失败:', error);
         showAlert('获取日志详情失败', 'danger');
@@ -1376,5 +1351,55 @@ async function viewEnvironmentVariables(environmentId, environmentName) {
     } catch (error) {
         console.error('获取环境变量详情失败:', error);
         showAlert('获取环境变量详情失败', 'danger');
+    }
+}
+
+async function pollTaskStatus(taskId) {
+    // 轮询间隔和超时设置
+    const POLL_INTERVAL = 2000;
+    const TIMEOUT = 60000;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < TIMEOUT) {
+        const response = await fetch(`/api/spiders/test/status/${taskId}`);
+        if (!response.ok) {
+            throw new Error('获取任务状态失败');
+        }
+        
+        const status = await response.json();
+        
+        // 更新进度显示
+        updateProgress(status);
+
+        if (status.state === 'SUCCESS') return status;
+        if (status.state === 'FAILURE') throw new Error(status.result || '任务执行失败');
+
+        await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL));
+    }
+    throw new Error('任务执行超时');
+}
+
+function updateProgress(status) {
+    const progressBar = document.getElementById('testProgressBar');
+    const progressLabel = document.getElementById('testProgressLabel');
+    
+    if (progressBar && progressLabel) {
+        progressBar.style.width = `${status.progress || 0}%`;
+        progressBar.setAttribute('aria-valuenow', status.progress || 0);
+        progressLabel.textContent = status.message || '正在执行...';
+    }
+}
+
+function handleTestResult(result) {
+    const resultContainer = document.getElementById('testResultContainer');
+    if (resultContainer) {
+        resultContainer.innerHTML = `
+            <div class="alert alert-success mt-3">
+                <h5>测试成功</h5>
+                <p>执行时长: ${result.duration}s</p>
+                <p>获取数据量: ${result.count}</p>
+                <pre class="bg-dark text-white p-3 mt-2">${JSON.stringify(result.sample_data, null, 2)}</pre>
+            </div>
+        `;
     }
 }

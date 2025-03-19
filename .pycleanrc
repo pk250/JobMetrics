@@ -1,0 +1,3 @@
+[pyclean]
+exclude = .venv, .idea, .vscode
+verbose = true

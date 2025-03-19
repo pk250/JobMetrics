@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>仪表盘</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">仪表盘</h1>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">爬虫总数</h5>
+                    <p class="card-text display-4"><span id="spider-count">0</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">调度任务</h5>
+                    <p class="card-text display-4"><span id="schedule-count">0</span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">成功率</h5>
+                    <p class="card-text display-4"><span id="success-rate">0%</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 仪表盘内容 -->
+</body>
+</html>
