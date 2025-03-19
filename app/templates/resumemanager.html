@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>初筛简历</title>
+    <link rel="stylesheet" href="/static/css/layui.css">
+</head>
+<body>
+    <div class="layui-card">
+            <div class="layui-form layui-card-header">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">ID</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="id" placeholder="请输入" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">岗位</label>
+                        <div class="layui-input-block">
+                            <select name="job" lay-search>
+                            <option value="">全部岗位</option>
+                            <option value="后端开发">后端开发</option>
+                            <option value="前端开发">前端开发</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">评分</label>
+                        <div class="layui-input-block">
+                            <select name="score" lay-search>
+                            <option value="">全部评分</option>
+                            <option value="1">≥6分</option>
+                            <option value="2">≥8分</option>
+                            <option value="3">≥10分</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                      <label class="layui-form-label">筛选状态</label>
+                      <div class="layui-input-block">
+                          <select name="screen" lay-search>
+                          <option value="">全部筛选</option>
+                          <option value="1">初筛</option>
+                          <option value="2">复筛</option>
+                          <option value="3">终筛</option>
+                          </select>
+                      </div>
+                  </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn layui-btn-normal" lay-submit lay-filter="search">搜索
+                            <i class="layui-icon layui-icon-search"></i>
+                        </button>
+                        <button class="layui-btn layui-btn-normal" lay-submit lay-filter="add">添加
+                          <i class="layui-icon layui-icon-add-1"></i>
+                      </button>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-card-body">
+                <div class="layui-table-view layui-table-view-1 layui-form layui-border-box" lay-filter="LAY-TABLE-FORM-DF-1">
+                    <div class="layui-table-box">
+                        <div class="layui-table-init layui-hide">
+                            <div class="layui-table-loading-icon">
+                                <i class="layui-icon layui-icon-loading-1 layui-anim layui-anim-rotate layui-anim-loop"></i>
+                            </div>
+                        </div>
+                        <div class="layui-table-header">
+                            <table cellspacing="0" cellpadding="0" border="0" class="layui-table">
+                                
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <script src="/static/js/layui.js"></script>
+<script>
+layui.use(['table', 'form', 'layer'], function(){
+  var table = layui.table;
+  var form = layui.form;
+  var layer = layui.layer;
+  
+  // 初始化表格
+  table.render({
+    elem: '.layui-table',
+    url: '/api/prescreen/data',
+    page: true,
+    height: 'full-200',
+    done: function(res, curr, count){
+        $('.layui-table-page').css('position', 'static');
+    },
+    cols: [[
+      {field: 'id', title: 'ID', width:80},
+      {field: 'name', title: '姓名'},
+      {field: 'job', title: '岗位'},
+      {field: 'experience', title: '工作经验'},
+      {field: 'status', title: '工作状态'},
+      {field: 'salary', title: '薪资范围'},
+      {field: 'score', title: '评分', width:100},
+      {field: 'status', title: '筛选状态', width:100},
+      {fixed: 'right', title: '操作', toolbar: '#operate-bar', width:150}
+    ]]
+  });
+
+  // 搜索功能
+  form.on('submit(search)', function(data){
+    table.reload('.layui-table', {
+      where: data.field
+    });
+  });
+
+  // 工具条事件
+  table.on('tool(.layui-table)', function(obj){
+    if(obj.event === 'detail'){
+      layer.msg('查看ID：'+ obj.data.id);
+    } else if(obj.event === 'score'){
+      layer.prompt({
+        title: '请输入评分',
+        value: obj.data.score
+      }, function(value, index){
+        layer.close(index);
+        // 这里添加评分提交逻辑
+      });
+    }
+  });
+});
+</script>
+<script type="text/html" id="operate-bar">
+  <a class="layui-btn layui-btn-xs" lay-event="detail">查看</a>
+  <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="score">评分</a>
+</script>
+</body>
+</html>

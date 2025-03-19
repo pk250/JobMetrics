@@ -6,3 +6,4 @@ router = APIRouter(prefix="/api", tags=["api"])
 @router.get("/")
 async def root():
     return {"message": "爬虫管理平台API"}
+    
