@@ -88,6 +88,19 @@ layui.use(['table', 'form', 'layer'], function(){
     url: '/api/prescreen/data',
     page: true,
     height: 'full-200',
+    parseData: function(res){
+        if(res.code === 0) {
+            return {
+                "code": 0,
+                "msg": "",
+                "count": res.total,
+                "data": res.data
+            }
+        }
+        
+        layer.msg(res.msg || '接口异常');
+        return {"code": 1};
+    },
     done: function(res, curr, count){
         $('.layui-table-page').css('position', 'static');
     },

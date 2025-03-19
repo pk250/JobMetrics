@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <title>初筛简历</title>
+    <title>爬虫管理</title>
     <link rel="stylesheet" href="/static/css/layui.css">
 </head>
 <body>
@@ -35,7 +35,7 @@
                             </div>
                         </div>
                         <div class="layui-table-header">
-                            <table cellspacing="0" cellpadding="0" border="0" class="layui-table">
+                            <table cellspacing="0" cellpadding="0" border="0" class="layui-table" id="spiders-list">
                                 
                             </table>
                         </div>
@@ -45,6 +45,9 @@
         </div>
     <script src="/static/js/jquery-3.7.1.min.js"></script>
     <script src="/static/js/layui.js"></script>
+    <script type="text/html" id="operate-bar">
+      <a class="layui-btn layui-btn-xs" lay-event="edit">修改</a>
+    </script>
 <script>
 layui.use(['table', 'form', 'layer','jquery'], function(){
   var table = layui.table;
@@ -57,6 +60,14 @@ layui.use(['table', 'form', 'layer','jquery'], function(){
     url: '/api/spiders/',
     page: true,
     height: 'full-200',
+    parseData: function(res){ 
+      return {
+          "code": 0,
+          "msg": "",
+          "count": res.length,
+          "data": res
+      }
+    },
     done: function(res, curr, count){
         $('.layui-table-page').css('position', 'static');
     },
@@ -64,11 +75,19 @@ layui.use(['table', 'form', 'layer','jquery'], function(){
       {field: 'id', title: 'ID', width:80},
       {field: 'name', title: '爬虫名称'},
       {field: 'description', title: '描述'},
-      {field: 'script_path', title: '脚本路径'},
-      {field: 'is_active', title: '激活状态', width:100},
+      {field: 'script_path', title: '脚本路径', templet: function(d){
+          return d.script_path.split('/').pop();
+      }},
+      {field: 'is_active', title: '激活状态', width:100, templet: function(d){
+          return d.is_active ? '已激活' : '未激活';
+      }},
       {field: 'user_id', title: '用户ID', width:100},
-      {field: 'created_at', title: '创建时间'},
-      {field: 'updated_at', title: '更新时间'},
+      {field: 'created_at', title: '创建时间', templet: function(d){
+          return layui.util.toDateString(d.created_at, 'yyyy-MM-dd HH:mm:ss');
+      }},
+      {field: 'updated_at', title: '更新时间', templet: function(d){
+          return layui.util.toDateString(d.updated_at, 'yyyy-MM-dd HH:mm:ss');
+      }},
       {fixed: 'right', title: '操作', toolbar: '#operate-bar', width:150}
     ]]
   });
@@ -81,24 +100,45 @@ layui.use(['table', 'form', 'layer','jquery'], function(){
   });
 
   // 工具条事件
-  table.on('tool(.layui-table)', function(obj){
-    if(obj.event === 'detail'){
-      layer.msg('查看ID：'+ obj.data.id);
-    } else if(obj.event === 'score'){
-      layer.prompt({
-        title: '请输入评分',
-        value: obj.data.score
-      }, function(value, index){
-        layer.close(index);
-        // 这里添加评分提交逻辑
+  table.on('tool(spiders-list)', function(obj){
+    if(obj.event === 'edit'){
+      layer.open({
+        type: 2,
+        title: '修改爬虫',
+        content: '/api/spiders/' + obj.data.id + '/edit',
+        area: ['500px', '400px'],
+        btn: ['保存', '取消'],
+        yes: function(index, layero){
+          var iframeWindow = window['layui-layer-iframe'+ index];
+          var submitID = 'LAY-spider-submit';
+          var submit = layero.find('iframe').contents().find('#'+ submitID);
+          //监听提交
+          iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+            var field = data.field; //获取提交的字段
+
+            //提交 Ajax 成功后，静态更新表格中的数据
+            $.ajax({
+              url: '/api/spiders/' + obj.data.id,
+              type: 'PUT',
+              data: field,
+              success: function(res){
+                layer.msg('修改成功', {icon: 1});
+                layer.close(index);
+                table.reload('.layui-table');
+              },
+              error: function(xhr, status, error){
+                layer.msg('修改失败', {icon: 2});
+              }
+            });
+          });
+
+          submit.trigger('click');
+        }
       });
+      console.log(obj.data);
     }
   });
 });
-</script>
-<script type="text/html" id="operate-bar">
-  <a class="layui-btn layui-btn-xs" lay-event="detail">查看</a>
-  <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="score">评分</a>
 </script>
 </body>
 </html>
