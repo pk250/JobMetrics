@@ -1,18 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from app.models.database import get_db
 from app.models import ExecutionLog
 from app.db.crud import execution_log_crud, spider_crud
 from app.schemas.execution_log import ExecutionLogResponse, ExecutionLogCreate, ExecutionLogUpdate
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/execution-logs", tags=["execution-logs"])
 
-@router.get("/", response_model=List[ExecutionLogResponse])
-async def get_execution_logs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+class logsModel(BaseModel):
+    total: int
+    logs: List[ExecutionLogResponse] 
+
+@router.get("/", response_model=logsModel)
+async def get_execution_logs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)) -> Any:
     """获取执行日志列表，支持分页和倒序排列"""
     logs = execution_log_crud.get_logs_with_order(db, skip=skip, limit=limit)
-    return logs
+    total = db.query(ExecutionLog).count()
+    return {"total": total, "logs": logs}
 
 @router.get("/count", response_model=Dict[str, int])
 async def get_execution_logs_count(db: Session = Depends(get_db)):

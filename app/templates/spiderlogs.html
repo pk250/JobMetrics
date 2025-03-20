@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>爬虫管理</title>
+    <link rel="stylesheet" href="/static/css/layui.css">
+</head>
+<body>
+    <div class="layui-card">
+            <div class="layui-card-body">
+                <div class="layui-table-view layui-table-view-1 layui-form layui-border-box" lay-filter="LAY-TABLE-FORM-DF-1">
+                    <div class="layui-table-box">
+                        <div class="layui-table-init layui-hide">
+                            <div class="layui-table-loading-icon">
+                                <i class="layui-icon layui-icon-loading-1 layui-anim layui-anim-rotate layui-anim-loop"></i>
+                            </div>
+                        </div>
+                        <div class="layui-table-header">
+                            <table cellspacing="0" cellpadding="0" border="0" class="layui-table" id="spiders-logs">
+                                
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <script src="/static/js/jquery-3.7.1.min.js"></script>
+    <script src="/static/js/layui.js"></script>
+    <script type="text/html" id="operate-bar">
+      <a class="layui-btn layui-btn-xs" lay-event="info">详情</a>
+    </script>
+
+    <script>
+
+    layui.use(['table', 'form', 'layer','jquery'], function(){
+      var table = layui.table;
+      var layer = layui.layer;
+
+      table.render({
+        elem: '#spiders-logs',
+        url: '/api/execution-logs/',
+        method: 'get', 
+        page: true,
+        parseData: function(res){
+          return {
+            "code": 0,
+            "msg": "",
+            "count": res.total,
+            "data": res.logs
+          };
+        },
+        done: function(res, curr, count){
+          $('.layui-table-page').css('text-align', 'center')
+        },
+        cols: [[
+          {field:'id', title: 'ID', width: 80, sort: true},
+          {field: 'spider.name', title: '爬虫名称', width: 180, templet: function(d){return d.spider.name;}},
+          {field: 'status', title: '状态', width: 100, templet: function(d){
+            return '<span class="layui-badge-'+ (d.status === '成功' ? 'green' : 'orange') +'">'+d.status+'</span>';
+          }},
+          {field: 'start_time', title: '开始时间', width: 180, templet: function(d){ 
+            return layui.util.toDateString(d.start_time, 'yyyy-MM-dd HH:mm:ss');
+          }},
+          {field: 'end_time', title: '结束时间', width: 180, templet: function(d){ 
+            return d.end_time ? layui.util.toDateString(d.end_time, 'yyyy-MM-dd HH:mm:ss') : '运行中';
+          }},
+          {field: 'error_message', title: '错误信息', minWidth: 200},
+          {fixed: 'right', title: '操作', width: 100, align: 'center', toolbar: '#operate-bar'}
+        ]]
+      })
+    })
+
+    </script>
+</body>
+</html>
