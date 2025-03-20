@@ -47,6 +47,7 @@
     <script src="/static/js/layui.js"></script>
     <script type="text/html" id="operate-bar">
       <a class="layui-btn layui-btn-xs" lay-event="edit">修改</a>
+      <a class="layui-btn layui-btn-xs layui-bg-red" lay-event="delete">删除</a>
     </script>
 <script>
 layui.use(['table', 'form', 'layer','jquery'], function(){
@@ -105,8 +106,8 @@ layui.use(['table', 'form', 'layer','jquery'], function(){
       layer.open({
         type: 2,
         title: '修改爬虫',
-        content: '/api/spiders/' + obj.data.id + '/edit',
-        area: ['500px', '400px'],
+        content: '/admin/spideredit?id=' + obj.data.id,
+        area: ['700px', '900px'],
         btn: ['保存', '取消'],
         yes: function(index, layero){
           var iframeWindow = window['layui-layer-iframe'+ index];
@@ -135,7 +136,21 @@ layui.use(['table', 'form', 'layer','jquery'], function(){
           submit.trigger('click');
         }
       });
-      console.log(obj.data);
+    }else if (obj.event === 'delete'){
+      layer.confirm('确定删除吗？', function(index){
+        $.ajax({
+          url: '/api/spiders/' + obj.data.id,
+          type: 'DELETE',
+          success: function(res){
+            layer.msg('删除成功', {icon: 1});
+            layer.close(index);
+            table.reload('.layui-table');
+          },
+          error: function(xhr, status, error){
+            layer.msg('删除失败', {icon: 2});
+          }
+        });
+      });
     }
   });
 });

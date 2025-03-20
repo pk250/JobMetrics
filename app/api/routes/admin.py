@@ -31,6 +31,11 @@ async def admin_users_page(request: Request, db=Depends(get_db)):
     """脚本管理页面"""
     return templates.TemplateResponse("spidermanager.html", {"request": request})
 
+@router.get("/spideredit", response_class=HTMLResponse)
+async def admin_users_page(request: Request, db=Depends(get_db)):
+    """脚本管理页面"""
+    return templates.TemplateResponse("spideredit.html", {"request": request})
+
 @router.get("/spidercookie", response_class=HTMLResponse)
 async def admin_users_page(request: Request, db=Depends(get_db)):
     """账号管理页面"""

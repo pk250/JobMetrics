@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>爬虫管理</title>
+    <link rel="stylesheet" href="/static/css/layui.css">
+</head>
+<body>
+    <form class="layui-form" lay-filter="spider-form">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">脚本名称</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="name" lay-verify="required" placeholder="请输入脚本名称" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">描述</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="description" placeholder="请输入" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item" style="margin-bottom:20px;">
+                    <label class="layui-form-label">脚本路径</label>
+                    <div class="layui-input-inline layui-input-wrap" style="width: 280px;">
+                        <input type="text" name="script_path" lay-verify="required" lay-verify="required" placeholder="请输入脚本路径" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid" style="padding:0 10px!important;">
+                        <button type="button" class="layui-btn layui-btn-normal" id="selectFile">
+                            <i class="layui-icon layui-icon-upload"></i>选择文件
+                        </button>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">状态</label>
+                    <div class="layui-input-block">
+                        <input type="radio" name="is_active" value="true" title="启用">
+                        <input type="radio" name="is_active" value="false" title="禁用">
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <pre class="layui-code layui-code-item layui-code-view layui-border-box layui-code-ln-mode layui-show" id="codePreview" style="height:500px;overflow-y:auto;margin:15px 0;">
+                       
+                    </pre>
+                </div>
+            </div>
+        </div>
+    </form>
+    <script src="/static/js/jquery-3.7.1.min.js"></script>
+    <script src="/static/js/layui.js"></script>
+    <script>
+    layui.use(['form', 'code'], function(){
+    var form = layui.form;
+    var code = layui.code;
+    
+        code({
+            elem: '#codePreview',
+            theme: 'dark',
+            height: 'calc(100vh - 220px)',
+            about: false,
+            lineNumber: true,
+            ln: true,
+            lang: 'python'
+        });
+        
+        // 获取URL参数
+        var spiderId = new URLSearchParams(location.search).get('id');
+        if(spiderId) {
+            $.ajax({
+            url: '/api/spiders/' + spiderId,
+            type: 'GET',
+            success: function(res) {
+                // 回填表单数据
+                form.val('spider-form', {
+                "name": res.name,
+                "description": res.description,
+                "script_path": res.script_path,
+                "is_active": res.is_active
+                });
+                form.render();
+                
+                // 获取脚本内容
+                layui.layer.msg('正在加载代码...', {icon: 16,shade: 0.3,time: 0});
+                $.ajax({
+                    url: '/api/spiders/script-content?path=' + res.script_path,
+                    type: 'GET',
+                    success: function(codeRes) {
+                        layui.layer.closeAll();
+                        $('#codePreview').text(codeRes);
+                    },
+                    error: function() {
+                        layui.layer.closeAll();
+                        layui.layer.msg('请求代码内容失败');
+                    }
+                });
+            }
+            });
+        }
+        
+    });
+    </script>
+</body>
+</html>
