@@ -128,11 +128,14 @@ class SpiderResponse(SpiderBase):
     class Config:
         orm_mode = True
 
+class SpiderListResponse(BaseModel):
+    total: int
+    spiders: List[SpiderResponse]
 
-@router.get("/", response_model=List[SpiderResponse])
+@router.get("/", response_model=SpiderListResponse)
 async def get_spiders(
-    skip: int = 0,
-    limit: int = 10,
+    page: int = 0,
+    limit: int = 100,
     search: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -142,11 +145,13 @@ async def get_spiders(
         spiders = db.query(Spider).filter(
             (Spider.name.ilike(f"%{search}%")) |
             (Spider.description.ilike(f"%{search}%"))
-        ).offset(skip).limit(limit).all()
+        ).offset((page-1)*limit).limit(limit).all()
     else:
         # 否则返回所有爬虫
-        spiders = spider_crud.get_multi(db, skip=skip, limit=limit)
-    return spiders
+        spiders = spider_crud.get_multi(db, skip=(page-1)*limit, limit=limit)
+
+    total = db.query(Spider).count()
+    return {"total": total, "spiders": spiders}
 
 
 @router.get("/{spider_id}", response_model=SpiderResponse)

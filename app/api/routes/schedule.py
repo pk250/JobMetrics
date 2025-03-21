@@ -34,12 +34,17 @@ class ScheduleResponse(ScheduleBase):
     class Config:
         orm_mode = True
 
+class ScheduleListResponse(BaseModel):
+    total: int
+    schedules: List[ScheduleResponse]
 
-@router.get("/", response_model=List[ScheduleResponse])
-async def get_schedules(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+
+@router.get("/", response_model=ScheduleListResponse)
+async def get_schedules(page: int = 1, limit: int = 10, db: Session = Depends(get_db)):
     """获取所有调度任务"""
-    schedules = schedule_crud.get_multi(db, skip=skip, limit=limit)
-    return schedules
+    schedules = schedule_crud.get_multi(db, skip=(page - 1) * limit, limit=limit)
+    total = db.query(Schedule).count()
+    return {"total": total, "schedules": schedules}
 
 
 @router.get("/spider/{spider_id}", response_model=List[ScheduleResponse])

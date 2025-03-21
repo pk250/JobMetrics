@@ -14,9 +14,9 @@ class logsModel(BaseModel):
     logs: List[ExecutionLogResponse] 
 
 @router.get("/", response_model=logsModel)
-async def get_execution_logs(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)) -> Any:
+async def get_execution_logs(page: int = 0, limit: int = 10, db: Session = Depends(get_db)) -> Any:
     """获取执行日志列表，支持分页和倒序排列"""
-    logs = execution_log_crud.get_logs_with_order(db, skip=skip, limit=limit)
+    logs = execution_log_crud.get_logs_with_order(db, skip=(page-1)*limit, limit=limit)
     total = db.query(ExecutionLog).count()
     return {"total": total, "logs": logs}
 

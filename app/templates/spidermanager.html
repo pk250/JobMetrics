@@ -65,8 +65,8 @@ layui.use(['table', 'form', 'layer','jquery'], function(){
       return {
           "code": 0,
           "msg": "",
-          "count": res.length,
-          "data": res
+          "count": res.total,
+          "data": res.spiders
       }
     },
     done: function(res, curr, count){

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>爬虫管理</title>
+    <link rel="stylesheet" href="/static/css/layui.css">
+</head>
+<body>
+    <div class="layui-card">
+        <div class="layui-card-header">
+            <!-- 新增按钮 -->
+            <button class="layui-btn layui-btn-normal" lay-submit lay-filter="add">添加
+                <i class="layui-icon layui-icon-add-1"></i>
+            </button>
+        </div>
+        <div class="layui-card-body">
+            <div class="layui-table-view layui-table-view-1 layui-form layui-border-box" lay-filter="LAY-TABLE-FORM-DF-1">
+                <div class="layui-table-box">
+                    <div class="layui-table-init layui-hide">
+                        <div class="layui-table-loading-icon">
+                            <i class="layui-icon layui-icon-loading-1 layui-anim layui-anim-rotate layui-anim-loop"></i>
+                        </div>
+                    </div>
+                    <div class="layui-table-header">
+                        <table cellspacing="0" cellpadding="0" border="0" class="layui-table" id="spiders-rules">
+                            
+                        </table>
+                    </div>
+    
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/jquery-3.7.1.min.js"></script>
+    <script src="/static/js/layui.js"></script>
+    <script type="text/html" id="operate-bar">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-xs layui-bg-red" lay-event="delete">删除</a>
+    </script>
+
+    <script type="text/html" id="schedule-form">
+      <form class="layui-form layui-form-pane" lay-filter="schedule-form" style="padding:20px;">
+        <div class="layui-form-item" style="display: block;">
+            <label class="layui-form-label">规则ID</label>
+            <div class="layui-input-block">
+                <input type="text" name="schedule_id" lay-verify="required" placeholder="请输入ID" autocomplete="off" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">爬虫ID</label>
+          <div class="layui-input-block">
+            <select name="spider_id" lay-verify="required" lay-search>
+              <option value="">请选择爬虫</option>
+            </select>
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">定时规则</label>
+          <div class="layui-input-block">
+            <input type="text" name="cron_expression" lay-verify="required|cron" placeholder="请输入cron表达式" autocomplete="off" class="layui-input">
+          </div>
+        </div>
+        <div class="layui-form-item">
+          <label class="layui-form-label">启用状态</label>
+          <div class="layui-input-block">
+            <input type="checkbox" name="is_active" lay-skin="switch" lay-text="ON|OFF" checked>
+          </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+          <button class="layui-btn" lay-submit lay-filter="submit">提交</button>
+        </div>
+      </form>
+    </script>
+    <script>
+        layui.use(['table', 'form', 'layer'], function(){
+        var table = layui.table;
+        var form = layui.form;
+        var spiderMap = {};
+        var loadIndex = layer.load();
+        $.get('/api/spiders/', function(res) {
+            layer.close(loadIndex);
+            res.spiders.forEach(function(spider) {
+                spiderMap[spider.id] = spider.name;
+            });
+            table.render({
+                elem: '#spiders-rules',
+                url: '/api/schedules/',
+                page: true,
+                cols: [[
+                    {field: 'id', title: 'Id', width: 80, sort: true},
+                    {field: 'spider_id', title: '爬虫名称', templet: function(d) {
+                        return spiderMap[d.spider_id] || d.spider_id;
+                    }},
+                    {field: 'cron_expression', title: '定时规则'},
+                    {field: 'is_active', title: '状态', templet: '#statusTpl'},
+                    {field: 'created_at', title: '创建时间', sort: true},
+                    {field: 'updated_at', title: '更新时间', sort: true},
+                    {title: '操作', toolbar: '#operate-bar', width: 150}
+                ]],
+                parseData: function(res) {
+                    return {
+                        "code": 0,
+                        "msg": "",
+                        "count": res.total,
+                        "data": res.schedules
+                    };
+                }
+            });
+        }).fail(function() {
+            layer.close(loadIndex);
+            layer.msg('获取爬虫数据失败');
+        });
+        // 绑定添加按钮点击事件
+        form.on('submit(add)', function(data){
+            layer.open({
+                type: 1,
+                title: '添加定时规则',
+                content: $('#schedule-form').html(),
+                area: ['500px', '400px'],
+                btn: ['提交', '取消'],
+                success: function(){
+                    form.render();
+                    // 加载爬虫列表
+                    $.get('/api/spiders/', function(res){
+                        var options = '<option value="">请选择爬虫</option>';
+                        res.spiders.forEach(function(spider){
+                            options += '<option value="'+spider.id+'">'+spider.name+'</option>';
+                        });
+                        $('select[name="spider_id"]').html(options);
+                        form.render('select');
+                    });
+                },
+                yes: function(index, layero){
+                    layero.find('.layui-hide [lay-filter="submit"]').click();
+                }
+            });
+        });
+
+        // 表单提交事件
+        form.on('submit(submit)', function(data){
+            $.ajax({
+                url: '/api/schedules/',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data.field),
+                success: function(){
+                    layer.msg('添加成功');
+                    table.reload('spiders-rules');
+                    layer.closeAll();
+                },
+                error: function(xhr){
+                    layer.msg('添加失败: ' + xhr.responseJSON.detail);
+                }
+            });
+            return false;
+        });
+
+        // 自定义cron验证规则
+        form.verify({
+            cron: function(value){
+                var cronRegex = /^(\*|([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])|\*\/([0-9]|1[0-9]|2[0-9]|3[0-9]|4[0-9]|5[0-9])) (\*|([0-9]|1[0-9]|2[0-3])|\*\/([0-9]|1[0-9]|2[0-3])) (\*|([1-9]|1[0-9]|2[0-9]|3[0-1])|\*\/([1-9]|1[0-9]|2[0-9]|3[0-1])) (\*|([1-9]|1[0-2])|\*\/([1-9]|1[0-2])) (\*|([0-6])|\*\/([0-6]))$/;
+                if(!cronRegex.test(value)){
+                    return '请输入合法的cron表达式';
+                }
+            }
+        });
+
+        // 绑定编辑按钮点击事件
+        table.on('tool(spiders-rules)', function(obj){
+            var data = obj.data;
+            if(obj.event === 'edit') {
+                layer.open({
+                    type: 1,
+                    title: '编辑定时规则',
+                    content: $('#schedule-form').html(),
+                    area: ['500px', '400px'],
+                    btn: ['提交', '取消'],
+                    success: function(){
+                        form.render();
+                        // 预填充表单数据
+                        form.val('schedule-form', {
+                            'schedule_id': data.id,
+                            'spider_id': data.spider_id,
+                            'cron_expression': data.cron_expression,
+                            'is_active': data.is_active
+                        });
+                        // 加载爬虫列表
+                        $.get('/api/spiders/', function(res){
+                            var options = '';
+                            res.spiders.forEach(function(spider){
+                                if(spider.id === data.spider_id)
+                                {
+                                    options = '<option value="'+spider.id+'">'+spider.name+'</option>';
+                                }
+                            });
+                            $('select[name="spider_id"]').html(options);
+                            form.render('select');
+                        });
+                    },
+                    yes: function(index, layero){
+                        layero.find('.layui-hide [lay-filter="submit"]').click();
+                    }
+                });
+            }
+        });
+
+        // 修改表单提交事件支持更新操作
+        form.on('submit(submit)', function(data){
+
+            $.ajax({
+                url: '/api/schedules/'+data.field.schedule_id+'/',
+                method: PUT,
+                contentType: 'application/json',
+                data: JSON.stringify(data.field),
+                success: function(){
+                    layer.msg(method === 'POST' ? '添加成功' : '更新成功');
+                    table.reload('spiders-rules');
+                    layer.closeAll();
+                },
+                error: function(xhr){
+                    layer.msg((method === 'POST' ? '添加失败' : '更新失败') + ': ' + xhr.responseJSON.detail);
+                }
+            });
+            return false;
+        });
+    });
+    </script>
+</body>
+</html>
